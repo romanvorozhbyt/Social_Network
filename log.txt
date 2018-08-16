@@ -1,0 +1,14 @@
+Entity of type "Message" in state "Added" has the following validation errors:
+- Property: "IdFrom", Error: "The IdFrom field is required."
+Entity of type "Message" in state "Added" has the following validation errors:
+- Property: "Chat", Error: "The Chat field is required."
+- Property: "UserFrom", Error: "The UserFrom field is required."
+- Property: "UserTo", Error: "The UserTo field is required."
+Entity of type "Message" in state "Added" has the following validation errors:
+- Property: "Chat", Error: "The Chat field is required."
+Entity of type "Message" in state "Added" has the following validation errors:
+- Property: "Chat", Error: "The Chat field is required."
+- Property: "UserFrom", Error: "The UserFrom field is required."
+- Property: "UserTo", Error: "The UserTo field is required."
+Entity of type "Message" in state "Added" has the following validation errors:
+- Property: "Chat", Error: "The Chat field is required."
