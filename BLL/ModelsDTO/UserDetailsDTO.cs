@@ -21,7 +21,8 @@ namespace BLL.ModelsDTO
         public string City { get; set; }
         public string Address { get; set; }
         public string WebSite { get; set; }
-        public virtual ICollection<ChatDTO> Chats { get; set; }
+        public virtual ICollection<FriendRequestDTO> FriendRequests { get; set; }
+        public virtual ICollection<UserDetailsDTO> Friends { get; set; }
 
     }
 }

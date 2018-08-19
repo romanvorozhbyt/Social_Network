@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using System.Web.Http.ModelBinding;
+using BLL.Abstraction;
 using BLL.ModelsDTO;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
@@ -27,7 +28,11 @@ namespace SocialNetwork.Controllers
     {
         private const string LocalLoginProvider = "Local";
         private ApplicationUserManager _userManager;
-
+        private readonly IUserService _service;
+        public AccountController(IUserService service)
+        {
+            _service = service;
+        }
         public AccountController()
         {
         }
@@ -58,7 +63,7 @@ namespace SocialNetwork.Controllers
             {
                 Email = User.Identity.GetUserName(),
                 HasRegistered = externalLogin == null,
-                LoginProvider = externalLogin != null ? externalLogin.LoginProvider : null
+                LoginProvider = externalLogin?.LoginProvider
             };
         }
 
@@ -327,14 +332,21 @@ namespace SocialNetwork.Controllers
             var user = new ApplicationUser() { UserName = model.UserName, Email = model.Email };
 
             IdentityResult result = await UserManager.CreateAsync(user, model.Password);
+            if (result.Succeeded)
+            {
+                var currentUser = UserManager.FindByName(user.UserName);
 
-            if (!result.Succeeded)
+                var roleresult = UserManager.AddToRole(currentUser.Id, "User");
+
+            }
+            else
             {
                 return GetErrorResult(result);
             }
+            var userDTO = new UserDetailsDTO() { Id = user.Id, FirstName = model.FirstName, LastName = model.LastName };
+            _service.Insert(userDTO);
             return Ok();
-            //var userDTO = new UserDetailsDTO() {Id = user.Id, FirstName = model.FirstName, LastName = model.LastName};
-            //UserController(userDTO, HttpMethod.Post);
+
             
         }
 

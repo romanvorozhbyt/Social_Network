@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Results;
 using System.Web.UI;
 using  BLL.Abstraction;
 using BLL.ModelsDTO;
@@ -14,6 +15,7 @@ using SocialNetwork.Models;
 
 namespace SocialNetwork.Controllers
 {
+    [Authorize]
     public class UserController : ApiController
     {
         private readonly IUserService _service;
@@ -22,35 +24,53 @@ namespace SocialNetwork.Controllers
             _service = service;
         }
         
-        // GET: api/User
-        public IHttpActionResult Get()
-        {
-            return Ok(_service.GetAll());
-        }
-
+        
         // GET: api/User/5
         public IHttpActionResult Get(string id)
         {
             return Ok(_service.GetById(id));
         }
 
-        // POST: api/User
-        public IHttpActionResult Post(UserDetailsDTO user)
-        {
-            if (ModelState.IsValid)
-                _service.Insert(user);
-            else return BadRequest();
-            return Ok(HttpStatusCode.NoContent);
-        }
+        
 
         // PUT: api/User/5
-        public void Put(int id, [FromBody]string value)
+        public IHttpActionResult Put(string id, [FromBody]UserDetailsDTO user)
         {
+            if (!ModelState.IsValid)
+                return BadRequest("Not a valid model");
+
+            var userId = RequestContext.Principal.Identity.GetUserId();
+            if (userId != id)
+                return StatusCode(HttpStatusCode.Forbidden);
+            var c = _service.GetById(id);
+            if (c != null)
+            {
+                _service.Update(user);
+            }
+           
+
+            return Ok();
         }
 
         // DELETE: api/User/5
-        public void Delete(int id)
+        public IHttpActionResult Delete(string id)
         {
+            var userId = RequestContext.Principal.Identity.GetUserId();
+            if (userId != id)
+                return StatusCode(HttpStatusCode.Forbidden);
+
+            if (_service.GetById(id) == null)
+                return NotFound();
+            
+            try
+            {
+                _service.Delete(id);
+            }
+            catch
+            {
+                return InternalServerError();
+            }
+            return StatusCode(HttpStatusCode.NoContent);
         }
     }
 }

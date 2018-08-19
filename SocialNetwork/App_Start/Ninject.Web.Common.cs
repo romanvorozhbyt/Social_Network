@@ -73,6 +73,9 @@ namespace SocialNetwork.App_Start
         {
             kernel.Bind<IUserService>().To<UserService>();
             kernel.Bind<IMessageService>().To<MessageService>();
+            kernel.Bind<IChatService>().To<ChatService>();
+            kernel.Bind<IFriendRequestService>().To<FriendRequestService>();
+            kernel.Bind<IFriendService>().To<FriendService>();
         }        
     }
 }
