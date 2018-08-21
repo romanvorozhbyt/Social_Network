@@ -19,6 +19,7 @@ namespace BLL.Infrastructure
             CreateMap<FriendRequestDTO, FriendRequest>().ReverseMap();
             CreateMap<MessageDTO, Message>() .ReverseMap();
             CreateMap<ChatDTO, Chat>().ReverseMap();
+            CreateMap<QueryParams, DatabaseQueryParams>();
 
         }
     }

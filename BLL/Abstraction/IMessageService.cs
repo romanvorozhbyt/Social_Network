@@ -12,7 +12,7 @@ namespace BLL.Abstraction
     {
         MessageDTO GetById(int id);
         void DeleteMessage(int id);
-        void EditMessage(MessageDTO friend);
+        void EditMessage(MessageDTO message, string content);
         IEnumerable<MessageDTO> GetChatMessages(int chatId, string userId, int pageIndex = 1 , int pageSize = 100);
         void SendMessage(MessageDTO message);
         void ForwardMessage(MessageDTO message, int chatId);

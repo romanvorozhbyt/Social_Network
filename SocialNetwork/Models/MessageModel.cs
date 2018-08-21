@@ -10,8 +10,6 @@ namespace SocialNetwork.Models
 
         public int ChatId { get; set; }
         
-        public string UserFromId { get; set; }
-        
         public  string Content { get; set; }
     }
 }

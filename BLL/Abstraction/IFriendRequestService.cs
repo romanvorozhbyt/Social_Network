@@ -13,13 +13,11 @@ namespace BLL.Abstraction
 
 
         FriendRequestDTO GetById(int id);
-        void Delete(int id);
         IEnumerable<FriendRequestDTO> GetFriendsRequests(string id);
-        IEnumerable<FriendRequestDTO> GetMyFriendRequests(string id);
-        void MakeFriendRequest(string RequestedTo_Id, string RequestedBy_Id);
+        void MakeFriendRequest(string requestedToId, string requestedById);
         void AcceptFriend(FriendRequestDTO friend);
-        void BlockUser(string RequestedTo_Id, string RequestedBy_Id);
-        void UnBlockUser(string RequestedTo_Id, string RequestedBy_Id);
+        void BlockUser(string requestedToId, string requestedById);
+        void UnBlockUser(string requestedToId, string requestedById);
         void DeclineFriendRequest(FriendRequestDTO friendRequest);
 
     }

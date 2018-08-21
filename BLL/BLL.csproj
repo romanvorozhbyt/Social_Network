@@ -69,6 +69,7 @@
     <Compile Include="ModelsDTO\EntityDTO.cs" />
     <Compile Include="ModelsDTO\FriendRequestDTO.cs" />
     <Compile Include="ModelsDTO\MessageDTO.cs" />
+    <Compile Include="ModelsDTO\QueryParams.cs" />
     <Compile Include="ModelsDTO\UserDetailsDTO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ChatService.cs" />

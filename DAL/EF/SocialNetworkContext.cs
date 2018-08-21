@@ -3,9 +3,8 @@ using DAL.Models;
 
 namespace DAL.EF
 {
-    using System;
     using System.Data.Entity;
-    using System.Linq;
+  
 
     public class SocialNetworkContext : DbContext
     {
@@ -28,7 +27,7 @@ namespace DAL.EF
             .HasRequired(s => s.Chat)
             .WithMany(g => g.Messages)
             .HasForeignKey(s => s.ChatId)
-            .WillCascadeOnDelete();
+            .WillCascadeOnDelete(true);
 
 
             modelBuilder.Entity<Message>()
@@ -36,8 +35,7 @@ namespace DAL.EF
                 .WithOptionalDependent()
                 .WillCascadeOnDelete(true);
 
-         
-            modelBuilder.Entity<FriendRequest>()
+          modelBuilder.Entity<FriendRequest>()
                 .HasOptional(s => s.RequestedTo)
                 .WithOptionalDependent()
                 .WillCascadeOnDelete(false);
@@ -45,13 +43,10 @@ namespace DAL.EF
             modelBuilder.Entity<UserDetails>().HasMany(m => m.Friends).WithMany();
 
             modelBuilder.Entity<UserDetails>().Property(d => d.DateOfBirth).HasColumnType("datetime2");
-
+            modelBuilder.Entity<Message>().Property(m => m.CreateDate).HasColumnType("datetime2");
+            modelBuilder.Entity<Message>().Property(m => m.ModifiedDate).HasColumnType("datetime2");
         }
 
-        // Add a DbSet for each entity type that you want to include in your model. For more information 
-        // on configuring and using a Code First model, see http://go.microsoft.com/fwlink/?LinkId=390109.
-
-        // public virtual DbSet<MyEntity> MyEntities { get; set; }
         public virtual DbSet<UserDetails> Users { get; set; }
         public virtual DbSet<Message> Messages { get; set; }
         public virtual DbSet<FriendRequest> Friends { get; set; }

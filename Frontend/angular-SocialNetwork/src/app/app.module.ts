@@ -5,13 +5,14 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {RouterModule} from '@angular/router';
 
 import { AppComponent } from './app.component';
-import { SignUpComponent } from './user/sign-up/sign-up.component';
+import { SignUpComponent } from './sign-up/sign-up.component';
 import { HttpClientModule } from '@angular/common/http';
 import { UserService } from './shared/user.service';
+import {ReqResService} from './shared/req-res.service'
 import {ToastrModule} from 'ngx-toastr';
 import { UserComponent } from './user/user.component';
 import {HomeComponent} from './home/home.component';
-import {SignInComponent} from './user/sign-in/sign-in.component';
+import {SignInComponent} from './sign-in/sign-in.component';
 import { appRoutes } from './routes';
 
 @NgModule({
@@ -32,7 +33,7 @@ import { appRoutes } from './routes';
     
 
   ],
-  providers: [UserService],
+  providers: [UserService, ReqResService], 
   bootstrap: [AppComponent]
 })
 export class AppModule { }

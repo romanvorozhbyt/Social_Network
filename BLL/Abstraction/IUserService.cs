@@ -17,5 +17,7 @@ namespace BLL.Abstraction
         void Insert(UserDetailsDTO user);
         void Delete(string id);
         void Update(UserDetailsDTO user);
+        IEnumerable<UserDetailsDTO> Search(QueryParams parameters);
+        
     }
 }

@@ -9,7 +9,7 @@ namespace BLL.ModelsDTO
     public class FriendRequestDTO :EntityDTO
     {
 
-        public Guid RequestedBy_Id { get; set; }
+        public string RequestedBy_Id { get; set; }
         public UserDetailsDTO RequestedBy { get; set; }
 
         public UserDetailsDTO RequestedTo { get; set; }

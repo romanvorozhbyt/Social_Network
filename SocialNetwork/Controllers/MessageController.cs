@@ -1,12 +1,9 @@
 ﻿using BLL.Abstraction;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Formatting;
 using System.Web.Http;
-using AutoMapper;
 using BLL.ModelsDTO;
 using Microsoft.AspNet.Identity;
 using Newtonsoft.Json;
@@ -16,123 +13,125 @@ using SocialNetwork.Tools;
 namespace SocialNetwork.Controllers
 {
     [Authorize]
+    [RoutePrefix("api/Message")]
     public class MessageController : ApiController
     {
 
         private readonly IMessageService _messageService;
         private readonly IChatService _chatService;
-        public MessageController(IMessageService messageService, IChatService chatService)
+        private readonly IUserService _userService;
+        public MessageController(IMessageService messageService, IChatService chatService, IUserService userService)
         {
             _messageService = messageService;
             _chatService = chatService;
+            _userService = userService;
         }
-        
-        [Route("api/Message/getChat/{chatId}")]
-        public HttpResponseMessage GetChat(int chatId)
-        {
-            string userId = RequestContext.Principal.Identity.GetUserId();
-            var chat = _chatService.GetById(chatId);
-            if (chat == null)
-                return Request.CreateResponse(HttpStatusCode.NotFound);
-             //if(chat.Users.Contains())
-            return Request.CreateResponse(HttpStatusCode.Found, _messageService.GetChatMessages(chatId,userId), new JsonMediaTypeFormatter
-            {
-                SerializerSettings =
-                    new JsonSerializerSettings
-                    {
-                        ContractResolver = new DynamicContractResolver<MessageDTO>(m => m.UserFrom, m=>m.Chat)
-                    }
-            });
-        }
+
+       
 
         // GET: api/Message/5
         public HttpResponseMessage Get(int id)
         {
-            return Request.CreateResponse(HttpStatusCode.Found, _messageService.GetById(id), new JsonMediaTypeFormatter
+            string userId = RequestContext.Principal.Identity.GetUserId();
+            var message = _messageService.GetById(id);
+            var chat = _chatService.GetById(message.ChatId);
+            var user = _userService.GetById(userId);
+            if (chat.Users.FirstOrDefault(u => u.Id == user.Id) == null && !RequestContext.Principal.IsInRole("Moderator"))
+                return Request.CreateResponse(HttpStatusCode.Forbidden);
+
+            return Request.CreateResponse(HttpStatusCode.Found, message, new JsonMediaTypeFormatter
             {
                 SerializerSettings =
                     new JsonSerializerSettings
                     {
-                        ContractResolver = new DynamicContractResolver<MessageDTO>(m=>m.Chat, m=>m.Chat, m=>m.UserFrom)
+                        ContractResolver = new DynamicContractResolver<MessageDTO>(m => m.Chat, m => m.Chat, m => m.UserFrom)
                     }
             });
 
         }
 
         [HttpPost]
-        [Route("api/Message/send")]
         // POST: api/Message
         public IHttpActionResult SendMessage([FromBody]MessageModel message)
         {
-            MessageDTO messageDto;
             if (!ModelState.IsValid)
                 return BadRequest("Model state is invalid");
-            try
-            {
-                messageDto = new MessageDTO()
-                {
-                    UserFromId = message.UserFromId,
-                    ChatId = message.ChatId,
-                    Content = new ContentDTO() {MessageContent = message.Content}
-                };
-                _messageService.SendMessage(messageDto);
+            string userId = RequestContext.Principal.Identity.GetUserId();
+            var chat = _chatService.GetById(message.ChatId);
+            if (chat == null)
+                return NotFound();
 
-            }
-            catch
+            if (chat.Users.FirstOrDefault(u=>u.Id==userId) == null && !RequestContext.Principal.IsInRole("Moderator"))
+                return StatusCode(HttpStatusCode.Forbidden);
+
+
+            var messageDto = new MessageDTO()
             {
-                return InternalServerError();
-            }
-            return CreatedAtRoute("DefaultApi", new { id = messageDto.Id }, messageDto);
-           
+                UserFromId = userId,
+                Chat = chat,
+                ChatId = message.ChatId,
+                Content = new ContentDTO() { MessageContent = message.Content }
+            };
+            _messageService.SendMessage(messageDto);
+
+            return Ok();
+
         }
         [HttpPut]
-        [Route("api/Message/EditMessage")]
+        [Route("{messageId}")]
         // PUT: api/Message/5
-        public IHttpActionResult EditMessage(int id, [FromBody]MessageDTO message)
+        public IHttpActionResult EditMessage(int messageId, [FromBody] string content)
         {
-            if (!ModelState.IsValid)
-                return BadRequest("Not a valid model");
+          
+            string userId = RequestContext.Principal.Identity.GetUserId();
+            var message = _messageService.GetById(messageId);
+            if (message == null)
+                return NotFound();
+            var chat = _chatService.GetById(message.ChatId);
+            if (chat == null)
+                return NotFound();
 
-            var m = _messageService.GetById(id);
-            if (m != null)
-            {
-                _messageService.EditMessage(message);
-            }
-            
+            if (!message.UserFromId.Equals(userId) && !RequestContext.Principal.IsInRole("Moderator"))
+                return StatusCode(HttpStatusCode.Forbidden);
+
+            _messageService.EditMessage(message, content);
+
             return Ok();
         }
 
         [HttpPost]
-        [Route("api/Message/Forward")]
-        public IHttpActionResult ForwardMessage(int chatId, [FromBody] MessageModel messageModel)
+        [Route("{messageId}/chat/{chatId}")]
+        public IHttpActionResult ForwardMessage(int chatId, int messageId)
         {
-            if (!ModelState.IsValid)
-                return BadRequest("Not a valid model");
-            var message = new MessageDTO()
-            {
-                ChatId = messageModel.ChatId,
-                UserFromId = messageModel.UserFromId,
-                Content = new ContentDTO() {MessageContent = messageModel.Content}
-            };
-           
-                _messageService.ForwardMessage(message, chatId);
-           
+          
+            string userId = RequestContext.Principal.Identity.GetUserId();
+            var chat = _chatService.GetById(chatId);
+            var message = _messageService.GetById(messageId);
+            if (chat == null || message == null)
+                return NotFound();
 
-            return Ok();
+            if (chat.Users.FirstOrDefault(u=>u.Id==userId)==null && !RequestContext.Principal.IsInRole("Moderator"))
+                return StatusCode(HttpStatusCode.Forbidden);
+
+            _messageService.ForwardMessage(message, chatId);
+              return Ok();
         }
         // DELETE: api/Message/5
         public IHttpActionResult Delete(int id)
         {
-            if (_messageService.GetById(id) == null)
+            var message = _messageService.GetById(id);
+            if (message == null)
                 return NotFound();
-            try
-            {
-                _messageService.DeleteMessage(id);
-            }
-            catch
-            {
-                return StatusCode(HttpStatusCode.InternalServerError);
-            }
+            string userId = RequestContext.Principal.Identity.GetUserId();
+            var chat = _chatService.GetById(message.ChatId);
+            if (chat == null)
+                return NotFound();
+
+            if (message.UserFromId!=userId && !RequestContext.Principal.IsInRole("Moderator"))
+                return StatusCode(HttpStatusCode.Forbidden);
+
+            _messageService.DeleteMessage(id);
+
             return StatusCode(HttpStatusCode.NoContent);
         }
     }

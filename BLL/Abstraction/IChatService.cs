@@ -11,7 +11,7 @@ namespace BLL.Abstraction
     public  interface IChatService
     {
         ChatDTO GetById(int id);
-        ChatDTO CreateChat(string creatorId, string invitedUser);
+        void CreateChat(string creatorId, string invitedUser);
         void DeleteChat(int id);
         IEnumerable<ChatDTO> GetAllUserChats(string userId);
         void AddUserToChat(int chatId, string userToAddId);

@@ -14,7 +14,7 @@ using DAL.Models;
 
 namespace BLL.Services
 {
-    public class ChatService:IChatService
+    public class ChatService : IChatService
     {
         private readonly IUnitOfWork _db;
         private readonly IMapper _mapper;
@@ -24,45 +24,83 @@ namespace BLL.Services
             _db = unitOfWork;
             _mapper = mapper;
         }
-        
 
-        public ChatDTO CreateChat(string creatorId, string invitedUserId)
+
+        public void CreateChat(string creatorId, string invitedUserId)
         {
-            var creator = _db.Users.GetById(creatorId);
-            var invitedUser = _db.Users.GetById(invitedUserId);
-            if (creator != null && invitedUser != null)
+            using (_db)
             {
+                var creator = _db.Users.GetById(creatorId);
+                var invitedUser = _db.Users.GetById(invitedUserId);
+                var blockRequest =
+                    _db.FriendsRequest.FindFriendRequest(creatorId, invitedUserId, FriendRequestFlag.Blocked);
 
-                var chat = creator.Chats.FirstOrDefault(c => c.Users.Contains(invitedUser) && c.Users.Count == 2);
-                if (chat == null)
+                if (blockRequest == null)
                 {
-                    chat = new Chat()
+                    if (creator.Chats != null)
                     {
-                        CreateDate = DateTime.Now,
-                        Users = new List<UserDetails>() {creator, invitedUser}
-                    };
-                    _db.Chat.Insert(chat);
-                    _db.Save();
-                    creator.Chats.Add(chat);
-                    invitedUser.Chats.Add(chat);
-                    _db.Save();
+                        var chat = creator.Chats.FirstOrDefault(c =>
+                            c.Users.FirstOrDefault(u => u.Id == invitedUser.Id) != null && c.Users.Count == 2);
+                        if (chat == null)
+                        {
+                            chat = new Chat()
+                            {
+                                CreateDate = DateTime.Now,
+                                Users = new List<UserDetails>() { creator, invitedUser }
+                            };
+                            _db.Chat.Insert(chat);
+                            _db.Save();
+                            creator.Chats.Add(chat);
+                            invitedUser.Chats.Add(chat);
+                        }
+                    }
+                    else
+                    {
+
+                        var chat = new Chat()
+                        {
+                            CreateDate = DateTime.Now,
+                            Users = new List<UserDetails>() { creator, invitedUser }
+                        };
+                        _db.Chat.Insert(chat);
+                        _db.Save();
+                        creator.Chats = new List<Chat>() { chat };
+                        invitedUser.Chats.Add(chat);
+                    }
                 }
 
-                return _mapper.Map<ChatDTO>(chat);
+                throw new InvalidOperationException();
             }
-            else throw new ObjectNotFoundException();
         }
 
         public ChatDTO GetById(int id)
         {
-            var chat = _db.Chat.GetById(id);
-            return _mapper.Map<ChatDTO>(chat);
+            using (_db)
+            {
+                var chat = _db.Chat.GetById(id);
+                return _mapper.Map<ChatDTO>(chat);
+            }
         }
 
         public void DeleteChat(int id)
         {
-            _db.Chat.Delete(id);
-            _db.Save();
+
+            using (_db)
+            {
+                var chat = _db.Chat.GetById(id);
+                var messages = chat.Messages;
+                List<Content> contentList = new List<Content>();
+                foreach (var message in messages)
+                {
+                    contentList.Add(message.Content);
+                    message.Content = null;
+                }
+                _db.Content.DeleteRange(contentList);
+                _db.Save();
+                _db.Messages.DeleteRange(messages);
+                _db.Save();
+                _db.Chat.Delete(id);
+            }
         }
 
         public IEnumerable<ChatDTO> GetAllUserChats(string userId)
@@ -80,32 +118,30 @@ namespace BLL.Services
         {
             var chat = _db.Chat.GetById(chatId);
             var userToAdd = _db.Users.GetById(userToAddId);
-            if (chat != null && userToAdd != null)
+            using (_db)
             {
-                userToAdd.Chats.Add(chat);
-                chat.Users.Add(userToAdd);
-                _db.Save();
+                if (chat.Users.FirstOrDefault(u => u.Id == userToAddId) == null)
+                {
+                    userToAdd.Chats.Add(chat);
+                    chat.Users.Add(userToAdd);
+                }
             }
-            else
-            {
-                throw new ObjectNotFoundException();
-            }
+
         }
 
         public void RemoveUserFromChat(int chatId, string userToRemoveId)
         {
             var chat = _db.Chat.GetById(chatId);
-            var userToAdd = _db.Users.GetById(userToRemoveId);
-            if (chat != null && userToAdd != null)
+            var userToRemove = _db.Users.GetById(userToRemoveId);
+            using (_db)
             {
-                userToAdd.Chats.Remove(chat);
-                chat.Users.Remove(userToAdd);
-                _db.Save();
+                if (chat.Users.FirstOrDefault(u => u.Id == userToRemoveId) != null)
+                {
+                    userToRemove.Chats.Remove(chat);
+                    chat.Users.Remove(userToRemove);
+                }
             }
-            else
-            {
-                throw new ObjectNotFoundException();
-            }
+
         }
     }
 }

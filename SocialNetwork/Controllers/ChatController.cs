@@ -1,67 +1,108 @@
-﻿using BLL.Abstraction;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using BLL.Abstraction;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Formatting;
 using System.Web.Http;
-using System.Web.UI.WebControls;
+using BLL.ModelsDTO;
+using Microsoft.AspNet.Identity;
+using Newtonsoft.Json;
+using SocialNetwork.Models;
+using SocialNetwork.Tools;
 
 namespace SocialNetwork.Controllers
 {
-    [Authorize]
+    
+    [RoutePrefix("api/Chat")]
     public class ChatController : ApiController
     {
         private readonly IChatService _chatService;
-        public ChatController(IChatService chatService)
+        private readonly IUserService _userService;
+        private readonly IMessageService _messageService;
+
+        public ChatController(IChatService chatService, IUserService userService, IMessageService messageService)
         {
             _chatService = chatService;
+            _userService = userService;
+            _messageService = messageService;
         }
-        [Authorize(Roles = ("User, Moderator"))]
-        [Route("api/chat/getUserChat/{userId}")]
-        public IHttpActionResult Get(string userId)
-        {
-            return Ok(_chatService.GetAllUserChats(userId));
-        }
-
        
-        [HttpPost]
-        [Route("api/Chat/Create/{creatorId}/{userToInviteId}")]
-        public IHttpActionResult CreateChat(string creatorId, string userToInviteId)
+       
+        [Route("{chatId}")]
+        public HttpResponseMessage GetChat(int chatId)
         {
-            var chat =_chatService.CreateChat(creatorId, userToInviteId);
-            return Ok(chat);
+            string userId = RequestContext.Principal.Identity.GetUserId();
+            var chat = _chatService.GetById(chatId);
+            var user = _userService.GetById(userId);
+            if (chat == null)
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            if (chat.Users.FirstOrDefault(u => u.Id == user.Id) == null && !RequestContext.Principal.IsInRole("Moderator"))
+                return Request.CreateResponse(HttpStatusCode.Forbidden);
+            return Request.CreateResponse(HttpStatusCode.Found, _messageService.GetChatMessages(chatId, userId), new JsonMediaTypeFormatter
+            {
+                SerializerSettings =
+                    new JsonSerializerSettings
+                    {
+                        ContractResolver = new DynamicContractResolver<MessageDTO>(m => m.UserFrom, m => m.Chat)
+                    }
+            });
         }
 
-        [HttpDelete]
-        [Route("api/Chat/RemoveUser/{chatId}/{userId}")]
-        public IHttpActionResult RemoveUserFromChat(int chatId, string userId)
+        [Authorize(Roles = "User")]
+        [HttpPost]
+        public IHttpActionResult CreateChat( [FromBody] string userToInviteId)
         {
-            _chatService.RemoveUserFromChat(chatId,userId);
+            string userId = RequestContext.Principal.Identity.GetUserId();
+            var user = _userService.GetById(userId);
+            var userToInvite = _userService.GetById(userToInviteId);
+            if (userToInvite == null)
+                return NotFound();
+            _chatService.CreateChat(user.Id, userToInvite.Id);
             return Ok();
         }
 
-        [HttpPost]
-        [Route("api/Chat/AddUser/{chatId}/{userId}")]
-        public IHttpActionResult AddUserToChat(int chatId, string userId)
+        [HttpPut]
+        [Route("{chatId}")]
+        public IHttpActionResult RemoveUserFromChat(int chatId, [FromBody] string userId)
         {
-            _chatService.AddUserToChat(chatId, userId);
+            var user = _userService.GetById(RequestContext.Principal.Identity.GetUserId());
+            var chat = _chatService.GetById(chatId);
+            if (chat.Users.FirstOrDefault(u => u.Id == user.Id) == null && !RequestContext.Principal.IsInRole("Moderator"))
+                return StatusCode(HttpStatusCode.Forbidden);
+            _chatService.RemoveUserFromChat(chatId, userId);
+            return Ok();
+        }
+
+        [HttpPut]
+        [Route("{chatId}/users")]
+        public IHttpActionResult AddUserToChat(int chatId, [FromBody] string userToAddId)
+        {
+            var user = _userService.GetById(RequestContext.Principal.Identity.GetUserId());
+            var chat = _chatService.GetById(chatId);
+            var userToAdd = _userService.GetById(userToAddId);
+            if (chat == null || userToAdd == null)
+                return NotFound();
+            if (chat.Users.FirstOrDefault(u => u.Id == user.Id) == null && !RequestContext.Principal.IsInRole("Moderator"))
+                return StatusCode(HttpStatusCode.Forbidden);
+
+            _chatService.AddUserToChat(chat.Id, userToAdd.Id);
             return Ok();
         }
         // DELETE: api/Chat/5
         public IHttpActionResult DeleteChat(int id)
         {
-            if (_chatService.GetById(id) == null)
+            var chat = _chatService.GetById(id);
+            if (chat == null)
                 return NotFound();
-            try
-            {
-                _chatService.DeleteChat(id);
-                return StatusCode(HttpStatusCode.NoContent);
-            }
-            catch
-            {
-                return StatusCode(HttpStatusCode.InternalServerError);
-            }
+            var user = _userService.GetById(RequestContext.Principal.Identity.GetUserId());
+            if (chat.Users.FirstOrDefault(u => u.Id == user.Id) == null && !RequestContext.Principal.IsInRole("Moderator"))
+                return StatusCode(HttpStatusCode.Forbidden);
+
+            _chatService.DeleteChat(id);
+            return StatusCode(HttpStatusCode.NoContent);
+
         }
     }
 }
+    

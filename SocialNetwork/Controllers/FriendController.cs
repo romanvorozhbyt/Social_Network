@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Net.Http.Formatting;
 using System.Web.Http;
 using BLL.Abstraction;
 using BLL.ModelsDTO;
-using Microsoft.ApplicationInsights.Web;
 using Microsoft.AspNet.Identity;
 using Newtonsoft.Json;
 using SocialNetwork.Tools;
@@ -15,6 +11,7 @@ using SocialNetwork.Tools;
 namespace SocialNetwork.Controllers
 {
     [Authorize]
+    [RoutePrefix("api/Friend")]
     public class FriendController : ApiController
     {
 
@@ -26,6 +23,7 @@ namespace SocialNetwork.Controllers
 
 
         // GET: api/Friend
+        [Route("{userId}")]
         public HttpResponseMessage GetAllFriends(string userId, int pageIndex = 1, int pageSize = 50)
         {
 

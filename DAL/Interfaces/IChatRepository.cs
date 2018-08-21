@@ -13,7 +13,6 @@ namespace DAL.Interfaces
         void Insert(Chat chat);
         void Delete(int id);
         Chat GetById(int id);
-        IEnumerable<Chat> GetAll(Expression<Func<Chat, bool>> predicate);
 
     }
 }

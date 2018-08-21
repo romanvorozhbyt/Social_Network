@@ -5,6 +5,7 @@ import { Observable, throwError } from 'rxjs';
 import { User } from './user.model';
 import { catchError } from 'rxjs/operators'
 
+
 @Injectable()
 export class UserService {
   readonly rootUrl = 'http://localhost:49859';
@@ -24,7 +25,7 @@ export class UserService {
       );
   }
 
-  userAuthentication(userName, password) {
+  userAuthentication(userName, password) : Observable<any> {
     var data = "UserName=" + userName + "&Password=" + password + "&grant_type=password";
     var reqHeader = new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' });
     return this.http.post('/token', data, { headers: reqHeader });
@@ -40,4 +41,5 @@ export class UserService {
     return throwError(
       'Something bad happened; please try again later.');
   }
+ 
 }

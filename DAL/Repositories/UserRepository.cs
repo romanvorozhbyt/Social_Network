@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Data.Entity.SqlServer;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -64,6 +65,16 @@ namespace DAL.Repositories
                 itemToModify.DateOfBirth = new DateTime(1960, 01,01);
             _context.Entry(itemToModify).CurrentValues.SetValues(item);
             _context.Entry(itemToModify).State = EntityState.Modified;
+        }
+
+        public IEnumerable<UserDetails> Search(DatabaseQueryParams parameters)
+        {
+            var query =
+                from user in _context.Users
+                where SqlFunctions.PatIndex("%"+parameters.FirstName+"%", user.FirstName) > 0 ||
+                      SqlFunctions.PatIndex("%" + parameters.LastName+ "%", user.LastName) > 0 
+                select user;
+            return query.ToList();
         }
     }
 }

@@ -36,83 +36,79 @@ namespace BLL.Services
         public void SendMessage(MessageDTO messageDto)
         {
             var message = _mapper.Map<Message>(messageDto);
-            var content = new Content() {MessageContent = message.Content.MessageContent};
-            var chat = _db.Chat.GetById(message.ChatId);
-            var userFrom = _db.Users.GetById(message.UserFromId);
-            if (chat != null && userFrom != null)
-            {
-                message.Content = null;
-                message.UserFrom = userFrom;
-                message.Chat = chat;
-                message.CreateDate = DateTime.Now;
-                message.ModifiedDate = DateTime.Now;
+            var content = new Content() { MessageContent = message.Content.MessageContent };
+            var chat = _db.Chat.GetById(message.Chat.Id);
+            message.Content = null;
+            message.CreateDate = DateTime.Now;
+            message.ModifiedDate = DateTime.Now;
+            message.Chat = chat;
+            _db.Messages.Insert(message);
+            _db.Save();
+            content.Id = message.Id;
+            message.Content = content;
+            chat.Messages.Add(message);
+            _db.Content.Insert(message.Content);
+            _db.Save();
 
-                _db.Messages.Insert(message);
-                _db.Save();
-                content.Id = message.Id;
-                message.Content = content;
-                chat.Messages.Add(message);
-                _db.Content.Insert(message.Content);
-                _db.Save();
-                
-            }
+
         }
 
         public void DeleteMessage(int id)
         {
-            _db.Messages.Delete(id);
-            _db.Save();
+            using (_db)
+            {
+                var message = _db.Messages.GetById(id);
+                message.Content = null;
+                _db.Content.Delete(id);
+
+                _db.Save();
+                _db.Messages.Delete(id);
+
+            }
+            
         }
 
-        public void EditMessage(MessageDTO messageDto)
+        public void EditMessage(MessageDTO messageDto, string content)
         {
             var message = _mapper.Map<Message>(messageDto);
-            var user = _db.Users.GetById(message.UserFromId);
-            var chat = _db.Chat.GetById(message.ChatId);
-            var content = message.Content;
-            message.UserFrom = user;
-            message.Chat = chat;
             message.ModifiedDate = DateTime.Now;
-            _db.Messages.Update(message);
-            _db.Content.Update(content);
-            _db.Save();
+            message.Content.MessageContent = content;
+            using (_db)
+            {
+                _db.Messages.Update(message);
+                _db.Content.Update(message.Content);
+
+            }
         }
 
-       
+
         public IEnumerable<MessageDTO> GetChatMessages(int chatId, string userId, int pageIndex = 1, int pageSize = 100)
         {
             var user = _db.Users.GetById(userId);
-            if (user != null)
-            {
                 var messages = _db.Messages.GetAll()
                     .Where(m => m.Chat.Id == chatId && m.Chat.Users.Contains(user))
                     .OrderByDescending(m => m.CreateDate)
                     .Skip((pageIndex - 1) * pageSize).Take(pageSize);
                 return _mapper.Map<IEnumerable<MessageDTO>>(messages);
-            }
-            else throw  new ArgumentException();
-            
-
             
         }
 
-        
+
         public void ForwardMessage(MessageDTO messageDto, int chatId)
         {
             var message = _mapper.Map<Message>(messageDto);
-            var forwardChat = _db.Chat.GetById(chatId);
-            var content = message.Content;
-            var userFrom = _db.Users.GetById(message.UserFromId);
-            if (forwardChat != null)
+
+            using (_db)
             {
+
+                var forwardChat = _db.Chat.GetById(chatId);
+                var content = message.Content;
                 var forwardedMessage = new Message()
                 {
                     Chat = forwardChat,
-                    ChatId = forwardChat.Id,
                     CreateDate = DateTime.Now,
                     ModifiedDate = DateTime.Now,
-                    UserFrom = userFrom,
-                    UserFromId = message.UserFromId
+                    UserFromId = message.UserFrom.Id,
 
                 };
                 _db.Messages.Insert(forwardedMessage);
@@ -121,9 +117,7 @@ namespace BLL.Services
                 forwardedMessage.Content = content;
                 forwardChat.Messages.Add(forwardedMessage);
                 _db.Content.Insert(forwardedMessage.Content);
-                _db.Save();
             }
-            else throw  new ObjectNotFoundException();
         }
     }
 }

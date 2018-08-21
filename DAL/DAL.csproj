@@ -50,14 +50,17 @@
   <ItemGroup>
     <Compile Include="EF\SocialNetworkInitializer.cs" />
     <Compile Include="Interfaces\IChatRepository.cs" />
+    <Compile Include="Interfaces\IContentRepository.cs" />
     <Compile Include="Interfaces\IFriendRequestRepository.cs" />
+    <Compile Include="Interfaces\IMessageRepository.cs" />
     <Compile Include="Interfaces\IUnitOfWork.cs" />
     <Compile Include="Interfaces\IUserRepository.cs" />
     <Compile Include="Models\Chat.cs" />
+    <Compile Include="Models\DatabaseQueryParams.cs" />
     <Compile Include="Repositories\ChatRepository.cs" />
+    <Compile Include="Repositories\ContentRepository.cs" />
     <Compile Include="Repositories\FriendRequestRepository.cs" />
-    <Compile Include="Repositories\Repository.cs" />
-    <Compile Include="Interfaces\IRepository.cs" />
+    <Compile Include="Repositories\MessageRepository.cs" />
     <Compile Include="Models\Content.cs" />
     <Compile Include="Models\Entity.cs" />
     <Compile Include="Models\FriendRequest.cs" />

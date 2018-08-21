@@ -6,6 +6,8 @@ using AutoMapper;
 using Ninject;
 using Ninject.Modules;
 using BLL.Infrastructure;
+using BLL.ModelsDTO;
+using SocialNetwork.Models;
 
 namespace SocialNetwork.Tools
 {
@@ -30,6 +32,7 @@ namespace SocialNetwork.Tools
             {
                 // Add all profiles in current assembly
                 cfg.AddProfile<AutoMapperProfile>();
+                cfg.CreateMap<SearchParams, QueryParams>();
 
             });
 

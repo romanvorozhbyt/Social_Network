@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 using DAL.EF;
 using DAL.Interfaces;
 using DAL.Models;
@@ -56,16 +54,26 @@ namespace DAL.Repositories
             if (item != null)
                 _dbSet.Remove(item);
         }
-        public bool IsRequestExist(string RequestedTo_Id, string RequestedBy_Id)
+
+
+        public bool IsRequestExist(string requestedToId, string requestedById)
         {
 
-            var request = _dbSet.FirstOrDefault(f => f.RequestedBy_Id == RequestedBy_Id
-                             && f.RequestedTo.Id == RequestedTo_Id || f.RequestedBy_Id == RequestedTo_Id
-                             && f.RequestedTo.Id == RequestedBy_Id);
+            var request = _dbSet.FirstOrDefault(f => f.RequestedBy_Id == requestedById
+                             && f.RequestedTo.Id == requestedToId || f.RequestedBy_Id == requestedToId
+                             && f.RequestedTo.Id == requestedById);
             if (request == null)
                 return false;
             else
                 return true;
+        }
+
+        public FriendRequest FindFriendRequest(string firstUserId, string secondUserId, FriendRequestFlag flag)
+        {
+            var request = _dbSet.FirstOrDefault(fr => fr.RequestedBy_Id == firstUserId&& fr.RequestedTo.Id == secondUserId||
+                fr.RequestedBy_Id == secondUserId && fr.RequestedTo.Id == firstUserId  & fr.FriendRequestFlag == flag);
+            return request;
+          
         }
 
     }
